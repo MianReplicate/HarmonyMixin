@@ -1,9 +1,12 @@
-﻿namespace HarmonyMixinBootstrap;
+﻿using System;
 
-public class Class1
+namespace HarmonyMixinBootstrap
 {
-    public static void Test()
+    public class Class1
     {
-        Console.WriteLine("Hello World!");
-    }
+        public static void Test()
+        {
+            Console.WriteLine("Hello World!");
+        }
+    }   
 }
