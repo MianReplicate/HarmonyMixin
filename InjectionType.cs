@@ -1,8 +1,9 @@
-﻿namespace HarmonyMixinBootstrap
+﻿namespace HarmonyMixinBootstrap;
+
+public enum InjectionType
 {
-    public enum InjectionType
-    {
-        Before,
-        After,
-    }
+    Head,
+    Tail,
+    Invoke,
+    Return
 }

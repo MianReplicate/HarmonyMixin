@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HarmonyMixinBootstrap", "HarmonyMixinBootstrap.csproj", "{7D9E5A04-BEAE-4B14-95C4-98115CC1D3EC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MixinTesting", "..\MixinTesting\MixinTesting.csproj", "{78AE3FF5-F31F-4B4F-811C-AE7F3D2D7C8A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{7D9E5A04-BEAE-4B14-95C4-98115CC1D3EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7D9E5A04-BEAE-4B14-95C4-98115CC1D3EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7D9E5A04-BEAE-4B14-95C4-98115CC1D3EC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{78AE3FF5-F31F-4B4F-811C-AE7F3D2D7C8A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{78AE3FF5-F31F-4B4F-811C-AE7F3D2D7C8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{78AE3FF5-F31F-4B4F-811C-AE7F3D2D7C8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{78AE3FF5-F31F-4B4F-811C-AE7F3D2D7C8A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
