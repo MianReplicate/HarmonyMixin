@@ -9,8 +9,4 @@
       <PackageReference Include="Lib.Harmony.Ref" Version="2.4.2" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Mixins\" />
-    </ItemGroup>
-
 </Project>

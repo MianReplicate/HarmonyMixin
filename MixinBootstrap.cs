@@ -4,9 +4,14 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
+using HarmonyMixinBootstrap.MixinTypes;
+using HarmonyMixinBootstrap.MixinTypes.Custom;
 
 namespace HarmonyMixinBootstrap
 {
+    // TODO: Mixins should always be able to be provided context if applicable (object of method that is invoked) and the instance of the object that the mixin is running in
+    // TODO: Create a method that brings cursor to intended injection point for easy patching
+    
      // ModifyVariable
     // ModifyReturnValue
     // Inject (Before & After)
@@ -20,29 +25,29 @@ namespace HarmonyMixinBootstrap
     {
         private const string ContextParamName = "context";
         
-        private static MixinBootstrap _instance;
-        
         private Harmony _harmony;
         private Assembly _assembly;
-        private static readonly Dictionary<MethodBase, List<KeyValuePair<MethodInfo, Inject>>> _injectionRegistry = new Dictionary<MethodBase, List<KeyValuePair<MethodInfo, Inject>>>();
-        private static readonly Dictionary<MethodBase, KeyValuePair<MethodInfo, RedirectMethod>> _redirectRegistry = new Dictionary<MethodBase, KeyValuePair<MethodInfo, RedirectMethod>>();
         
         public MixinBootstrap(Harmony harmony, Assembly assembly)
         {
-            _instance = this;
             _harmony = harmony;
             _assembly = assembly;
         }
-
+        
+        ///<summary>
+        /// Due to restrictions imposed by Harmony, this will unpatch all methods globally! You should only be using this method for hot-reloading purposes anyway.
+        /// </summary>
         public void Unregister()
         {
-            _injectionRegistry.Clear();
-            _redirectRegistry.Clear();
+            _harmony.UnpatchAll(_harmony.Id);
         }
         
+        ///<summary>
+        /// Will register every annotation in the given assembly.
+        /// </summary>
         public void Register()
         {
-            LoggerUtility.Info("Registering mixin bootstrap!");
+            LoggerUtility.Info($"Registering mixins for {_harmony.Id}!");
             
             foreach (var type in _assembly.GetTypes())
             {
@@ -56,32 +61,24 @@ namespace HarmonyMixinBootstrap
                             LoggerUtility.Info($"{method.Name} must be static in order to use it for mixins!");
                             continue;
                         }
-                        
-                        // RegisterInjectIfOneExists(mixin.ClassType, method);
-                        HandleRedirect(mixin.ClassType, method);
+
+                        foreach (var attribute in method.GetCustomAttributes())
+                        {
+                            var baseType = attribute.GetType().BaseType;
+                            if (baseType.Name == typeof(BaseModification<>).Name)
+                            {
+                                var verifyIsValid = AccessTools.Method(attribute.GetType(), "VerifyIsValid");
+                                var patchMethod = AccessTools.Method(attribute.GetType(), "PatchMethod");
+                                if((bool) verifyIsValid.Invoke(attribute, new[]{method}))
+                                    patchMethod.Invoke(attribute, new object[] {_harmony, mixin.ClassType});
+                            }
+                        }
                     }   
                 }
             }
         }
 
-        // private void RegisterInjectIfOneExists(Type classType, MethodInfo mixinMethod)
-        // {
-        //     var injectAttribute = mixinMethod.GetCustomAttribute<Inject>();
-        //     if(injectAttribute != null)
-        //     {
-        //         var methodToInject = AccessTools.Method(classType, injectAttribute.MethodToInjectIn);
-        //
-        //         if (!_injectionRegistry.TryGetValue(methodToInject, out var listOfInjects))
-        //         {
-        //             listOfInjects = new List<KeyValuePair<MethodInfo, Inject>>();
-        //             _injectionRegistry.Add(methodToInject, listOfInjects);
-        //             _harmony.Patch(methodToInject, transpiler: new HarmonyMethod(typeof(MixinBootstrap).GetMethod(nameof(InjectTranspiler))));
-        //         }
-        //         
-        //         listOfInjects.Add(new KeyValuePair<MethodInfo, Inject>(mixinMethod, injectAttribute));
-        //     }
-        // }
-        
+
         private void HandleRedirect(Type classMethodInvokedIn, MethodInfo mixinMethod)
         {
             var redirectAttribute = mixinMethod.GetCustomAttribute<RedirectMethod>();
@@ -91,83 +88,5 @@ namespace HarmonyMixinBootstrap
                     redirectAttribute.PatchMethod(_harmony, classMethodInvokedIn);
             }
         }
-
-        // public static IEnumerable<CodeInstruction> RedirectTranspiler(IEnumerable<CodeInstruction> instructions, MethodBase original)
-        // {
-        //     if (_redirectRegistry.TryGetValue(original, out var pair))
-        //     {
-        //         var mixinMethod = pair.Key;
-        //         var redirectAnnotation = pair.Value;
-        //         var wantedIndex = redirectAnnotation.Ordinal;
-        //         var currentIndex = 0;
-        //         var inserted = false;
-        //
-        //         foreach (var instruction in instructions)
-        //         {
-        //             if (inserted)
-        //             {
-        //                 yield return instruction;
-        //                 goto Skipped;
-        //             }
-        //             if (!instruction.Calls(redirectAnnotation.MethodToRedirect)){
-        //                 yield return instruction;
-        //                 goto Skipped;
-        //             }
-        //             if (currentIndex != wantedIndex)
-        //             {
-        //                 currentIndex += 1;
-        //                 yield return instruction;
-        //                 goto Skipped;
-        //             }
-        //
-        //             yield return new CodeInstruction(OpCodes.Call, mixinMethod);
-        //             inserted = true;
-        //             
-        //             Skipped: ;
-        //         }
-        //     }
-        //     else
-        //     {
-        //         LoggerUtility.Info($"Failed to redirect {original.Name}! Couldn't find redirection metadata for it.");
-        //         foreach (var instruction in instructions)
-        //         {
-        //             yield return instruction;
-        //         }
-        //     }
-        // }
-        //
-        // private static IEnumerable<CodeInstruction> InjectTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator il, MethodBase original)
-        // {
-        //     if (_injectionRegistry.TryGetValue(original, out var metadatas))
-        //     {
-        //         var methodsToLook = metadatas.Select(metadata => AccessTools.Method(original.DeclaringType, metadata.Value.TargetMethod)).ToList();
-        //         foreach (var instruction in instructions)
-        //         {
-        //             var methodInfo = methodsToLook.Where(instruction.Calls).First();
-        //             if (methodInfo == null)
-        //                 yield return instruction;
-        //             
-        //             
-        //         }
-        //     }
-        //     else
-        //     {
-        //         LoggerUtility.Info($"Failed to inject into {original.Name}! Couldn't find injection metadata for it.");
-        //         foreach (var instruction in instructions)
-        //         {
-        //             yield return instruction;
-        //         }
-        //     }
-        // }
-        //
-        // private static void RunBeforeInjects()
-        // {
-        //     
-        // }
-        //
-        // private static void RunAfterInjects()
-        // {
-        //     
-        // }
     }   
 }

@@ -4,6 +4,5 @@ public enum InjectionType
 {
     Head,
     Tail,
-    Invoke,
-    Return
+    Invoke
 }

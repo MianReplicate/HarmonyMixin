@@ -7,10 +7,28 @@ using HarmonyLib;
 namespace HarmonyMixinBootstrap
 {
  
-public static class BootstrapUtility
+public static class StackUtility
 {
         private static void MoveCursorToBeginningOfMethod(this CodeMatcher matcher, MethodInfo method, int ordinal)
         {
+            var startOrdinal = 0;
+            matcher.Start();
+            matcher.SearchForward(instruction =>
+            {
+                if (!instruction.Calls(method))
+                    return false;
+                
+                if (startOrdinal != ordinal)
+                {
+                    startOrdinal++;
+                    return false;
+                }
+
+                return true;
+            });
+
+            var stack = 0;
+            // matcher.SearchBackwards()
             
         }
 
@@ -18,13 +36,18 @@ public static class BootstrapUtility
         {
             
         }
+
+        private static void FindBeginningAndEndingPointOfType(this CodeMatcher matcher, Type argumentType, MethodInfo methodUsedFor, int ordinal)
+        {
+            // matcher.SearchForward();
+        }
         
         // // How much is currently on the stack at this index
-        // private static Dictionary<int, int> GetInstructionToStackCount(List<CodeInstruction> instructions, int targetIndex)
+        // private static Dictionary<int, int> GetInstructionToStackCount(List<CodeInstruction> instructions)
         // {
         //     var stack = 0;
         //
-        //     for (int i = 0; i < instructions.Count && i < targetIndex; i++)
+        //     for (var i = 0; i < instructions.Count; i++)
         //     {
         //         var code = instructions[i];
         //         var op = code.opcode;
